@@ -14,21 +14,23 @@ namespace AirVinyl.API.Controllers
     {
         private AirVinylDbContext dbContext = new AirVinylDbContext();
 
+        [EnableQuery(MaxExpansionDepth = 3, MaxSkip = 10, MaxTop = 5, PageSize = 4)]
         public IHttpActionResult Get()
         {
             return Ok(dbContext.People);
         }
 
+        [EnableQuery]
         public IHttpActionResult Get([FromODataUri] int key)
         {
-            Person person = dbContext.People.FirstOrDefault(p => p.PersonId == key);
+            IQueryable<Person> people = dbContext.People.Where(p => p.PersonId == key);
 
-            if (person == null)
+            if (!people.Any())
             {
                 return NotFound();
             }
 
-            return Ok(person);
+            return Ok(SingleResult.Create(people));
         }
 
         [HttpGet]
@@ -64,25 +66,33 @@ namespace AirVinyl.API.Controllers
         }
 
         [HttpGet]
-        [ODataRoute("People({personId})/Friends")]
+        [EnableQuery]
         [ODataRoute("People({personId})/VinylRecords")]
-        public IHttpActionResult GetPersonCollectionProperty([FromODataUri] int personId)
+        public IHttpActionResult GetVinylRecords([FromODataUri] int personId)
         {
-            string collectionPropertyName = Url.Request.RequestUri.Segments.Last();
-
-            Person person = dbContext.People.Include(collectionPropertyName).FirstOrDefault(p => p.PersonId == personId);
+            Person person = dbContext.People.FirstOrDefault(p => p.PersonId == personId);
 
             if (person == null)
             {
                 return NotFound();
             }
 
-            if (!person.HasProperty(collectionPropertyName))
+            return Ok(dbContext.VinylRecords.Where(v => v.Person.PersonId == personId));
+        }
+
+        [HttpGet]
+        [EnableQuery]
+        [ODataRoute("People({personId})/Friends")]
+        public IHttpActionResult GetFriends([FromODataUri] int personId)
+        {
+            Person person = dbContext.People.Include("Friends").FirstOrDefault(p => p.PersonId == personId);
+
+            if (person == null || person.Friends == null)
             {
                 return NotFound();
             }
 
-            return this.CreateOKHttpActionResult(person.GetValue(collectionPropertyName));
+            return Ok(person.Friends);
         }
 
         [HttpGet]

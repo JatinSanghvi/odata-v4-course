@@ -11,6 +11,7 @@ namespace AirVinyl.API
         public static void Register(HttpConfiguration config)
         {
             config.MapODataServiceRoute("ODataRoute", "odata", GetEdmModel());
+            config.Count().Filter().OrderBy().Expand().Select().MaxTop(null);
             config.EnsureInitialized();
         }
 
@@ -24,6 +25,7 @@ namespace AirVinyl.API
 
             builder.EntitySet<Person>("People");
             builder.EntitySet<VinylRecord>("VinylRecords");
+            builder.EntitySet<RecordStore>("RecordStores");
 
             return builder.GetEdmModel();
         }

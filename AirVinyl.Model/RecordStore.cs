@@ -20,7 +20,18 @@ namespace AirVinyl.Model
         public Address StoreAddress { get; set; }
 
         public ICollection<string> Tags { get; set; }
-       
+
+        public string TagsAsString
+        {
+            get
+            {
+                return Tags == null ? string.Empty : string.Join(",", Tags);
+            }
+            set
+            {
+                Tags = value.Split(',').ToList();
+            }
+        }
         public ICollection<Rating> Ratings { get; set; }
 
         public RecordStore()
