@@ -56,7 +56,6 @@ namespace AirVinyl.API.Helpers
             return (IHttpActionResult)returnValue;
         }
 
-
         /// <summary>
         /// Helper method to get the odata path for an arbitrary odata uri.
         /// </summary>

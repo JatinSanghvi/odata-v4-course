@@ -82,6 +82,29 @@ namespace AirVinyl.API.Controllers
 
         [HttpGet]
         [EnableQuery]
+        [ODataRoute("People({personId})/VinylRecords({vinylRecordId})")]
+        public IHttpActionResult GetVinylRecord([FromODataUri] int personId, [FromODataUri] int vinylRecordId)
+        {
+            Person person = dbContext.People.FirstOrDefault(p => p.PersonId == personId);
+
+            if (person == null)
+            {
+                return NotFound();
+            }
+
+            IQueryable<VinylRecord> vinylRecords =
+                dbContext.VinylRecords.Where(v => v.Person.PersonId == personId && v.VinylRecordId == vinylRecordId);
+
+            if (!vinylRecords.Any())
+            {
+                return NotFound();
+            }
+
+            return Ok(SingleResult.Create(vinylRecords));
+        }
+
+        [HttpGet]
+        [EnableQuery]
         [ODataRoute("People({personId})/Friends")]
         public IHttpActionResult GetFriends([FromODataUri] int personId)
         {
@@ -140,6 +163,31 @@ namespace AirVinyl.API.Controllers
             return Created(person);
         }
 
+        [HttpPost]
+        [ODataRoute("People({personId})/VinylRecords")]
+        public IHttpActionResult CreateVinylRecord([FromODataUri] int personId, VinylRecord vinylRecord)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            Person person = dbContext.People.FirstOrDefault(p => p.PersonId == personId);
+
+            if (person == null)
+            {
+                return NotFound();
+            }
+
+            // Link the VinylRecord to the Person. Addresses incorrect Person key in request body.
+            vinylRecord.Person = person;
+
+            dbContext.VinylRecords.Add(vinylRecord);
+            dbContext.SaveChanges();
+
+            return Created(vinylRecord);
+        }
+
         public IHttpActionResult Put([FromODataUri] int key, Person person)
         {
             if (!ModelState.IsValid)
@@ -181,6 +229,39 @@ namespace AirVinyl.API.Controllers
             return StatusCode(HttpStatusCode.NoContent);
         }
 
+        [HttpPatch]
+        [ODataRoute("People({personId})/VinylRecords({vinylRecordId})")]
+        public IHttpActionResult UpdateVinylRecord([FromODataUri] int personId, [FromODataUri] int vinylRecordId,
+            Delta<VinylRecord> patch)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            Person person = dbContext.People.FirstOrDefault(p => p.PersonId == personId);
+
+            if (person == null)
+            {
+                return NotFound();
+            }
+
+            VinylRecord vinylRecord = dbContext.VinylRecords.FirstOrDefault(
+                v => v.VinylRecordId == vinylRecordId && v.Person.PersonId == personId);
+
+            if (vinylRecord == null)
+            {
+                return NotFound();
+            }
+
+            patch.Patch(vinylRecord);
+
+            dbContext.VinylRecords.Add(vinylRecord);
+            dbContext.SaveChanges();
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
         public IHttpActionResult Delete([FromODataUri] int key)
         {
             Person person = dbContext.People.FirstOrDefault(p => p.PersonId == key);
@@ -196,6 +277,31 @@ namespace AirVinyl.API.Controllers
             }
 
             dbContext.People.Remove(person);
+            dbContext.SaveChanges();
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
+        [HttpDelete]
+        [ODataRoute("People({personId})/VinylRecords({vinylRecordId})")]
+        public IHttpActionResult DeleteVinylRecord([FromODataUri] int personId, [FromODataUri] int vinylRecordId)
+        {
+            Person person = dbContext.People.FirstOrDefault(p => p.PersonId == personId);
+
+            if (person == null)
+            {
+                return NotFound();
+            }
+
+            VinylRecord vinylRecord = dbContext.VinylRecords.FirstOrDefault(
+                v => v.VinylRecordId == vinylRecordId && v.Person.PersonId == personId);
+
+            if (vinylRecord == null)
+            {
+                return NotFound();
+            }
+
+            dbContext.VinylRecords.Remove(vinylRecord);
             dbContext.SaveChanges();
 
             return StatusCode(HttpStatusCode.NoContent);
